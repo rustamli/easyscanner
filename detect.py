@@ -1,0 +1,93 @@
+#!/usr/bin/python2.6
+
+import re
+from xhelper import *
+
+def process(QUERY):
+
+	q = QUERY.lower()
+	FILE_CITIES = "p_cities.csv"
+	FILE_DATASET = "dataset.csv"
+
+	MONTHS = dict()
+	MONTHS = {"january" : "01", "february": "02", "march": "03", "april": "04", "may": "05", "june": "06", "july": "07", "august": "08", "september": "09", "october": "10", "november": "11", "december": "12"}
+
+	ERROR = False
+	FROM = "from"
+	TO = "to"
+	IS_TO = False
+	depDate = ""
+	sourceCity = ""
+	destinationCity = ""
+	destinationSecondPart = ""
+	content = readFile(FILE_CITIES)
+	lines = content.splitlines()
+	cities = []
+	query = dict()
+	for line in range(0,len(lines)):
+		cities.append(lines[line].strip().lower())
+
+	tokens = re.split('[\\s]+', q)
+	for ids in range(0,len(tokens)):
+		if ids == 0:
+			query[ids] = { tokens[ids] : "<s>" }
+		else:
+			query[ids] = { tokens[ids] : tokens[ids-1] }
+		if ids == len(tokens) -1:
+			query[ids + 1] = { "</s>" : tokens[ids] }
+
+	start_query = tokens[0]
+
+	if start_query == TO:
+		for outerKeys in query:
+			for keys in query[outerKeys]:
+				if keys == FROM:
+					ERROR = True
+					return -1
+
+	for outerKeys in query:
+		for keys in query[outerKeys]:
+			if keys == TO:
+				IS_TO = True
+
+	if start_query == FROM:
+		for outerKeys in query:
+			for keys in query[outerKeys]:
+				if query[outerKeys][keys] == FROM:
+					sourceCity = keys
+					if sourceCity in cities:
+						break
+					sourceCity, ERROR = findSecondPartCityName(sourceCity, query, cities, ERROR, TO)
+
+	if IS_TO:
+		if start_query != TO and start_query != FROM:
+			sourceCity = start_query
+			if sourceCity not in cities:
+				sourceCity, ERROR = findSecondPartCityName(sourceCity, query, cities, ERROR, TO)
+
+		for outerKeys in query:
+			for keys in query[outerKeys]:
+				if query[outerKeys][keys] == TO:
+					destinationCity = keys		
+					if destinationCity in cities:
+						break;
+					destinationCity, ERROR = findSecondPartCityName(destinationCity, query, cities, ERROR, TO)
+	else:
+		if start_query != FROM:
+			if start_query in cities:
+				destinationCity = start_query
+			else:
+				destinationCity, ERROR = findSecondPartCityName(start_query, query, cities, ERROR, TO)
+		
+	if ERROR:
+		return -1
+	else:
+		for outerKeys in query:
+			for keys in query[outerKeys]:
+				if keys in MONTHS:
+					depDate = MONTHS[keys]
+					break
+
+	table = creatTable(FILE_DATASET)
+	return findFlights(sourceCity, destinationCity, depDate, table)
+

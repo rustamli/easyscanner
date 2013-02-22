@@ -1,0 +1,344 @@
+<html>
+<head>
+    <title>easyscanner</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.0/css/bootstrap-combined.min.css" 
+    rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link href='http://fonts.googleapis.com/css?family=Oxygen' rel='stylesheet' type='text/css'>
+
+    
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="js/cities.js"></script>
+    <script type="text/javascript" src="js/handlebars.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.0/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+
+            $('.search-input').focus();
+
+
+            var searchInputDiv = document.getElementsByClassName('search-input')[0];
+            searchInputDiv.onfocus = function() {
+                $(this).html($(this).text());
+                window.setTimeout(function() {
+                    var sel, range;
+                    if (window.getSelection && document.createRange) {
+                        range = document.createRange();
+                        range.selectNodeContents(searchInputDiv);
+                        sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    } else if (document.body.createTextRange) {
+                        range = document.body.createTextRange();
+                        range.moveToElementText(searchInputDiv);
+                        range.select();
+                    }
+                }, 1);
+            };
+
+            $('.search-input').blur(function() {
+                highlightInput();
+            })
+            
+
+            $('.search-input').keydown(function(e) {
+                var value = $('.search-input').text();
+                console.log(e.keyCode, value.length)
+                if ((value.length < 2) && (e.keyCode == 8)) {
+                    $('.clear-button').click();
+                    return;
+                }
+            })
+
+            $('.search-input').keypress(function(e) {
+                var value = $('.search-input').html();
+                if (e.charCode == 13) {
+
+                    $('.loading-area').show();
+
+                    $.get('/api?q=' + value, function(response) {
+                        $('.loading-area').hide();
+
+                        var rOut = '';
+                        var bOut = '';
+                        var source   = $("#result-template").html();
+                        var template = Handlebars.compile(source);                    
+                        source   = $("#result-best-template").html();
+                        var bestTemplate = Handlebars.compile(source);
+                        var count = 0;
+                        for (var r in response) {
+                            var row = response[r];
+
+                            var date = new Date(row[2]);
+                            var dateParts = date.toString().split(' ');
+
+                            var context = {
+                                price: row[3],
+                                date: dateParts[2] + ' ' + dateParts[1],
+                                airline: row[4] 
+                            };
+
+
+                            if (count > 1)
+                                rOut += template(context);
+                            else
+                                bOut += bestTemplate(context);
+                            count++;
+
+                            if (count > 15)
+                                break;
+                        }
+
+                        $('.b-h2').html('Best Offers');
+                        if ((response == -1)||(response.length == 0)) {
+                            $('.b-h2').html('No Results :-(');
+                        }
+
+                        $('.r-h2').hide();
+                        $('.see-more-h2').hide();
+                        if (response.length > 2) {
+                            $('.r-h2').show();
+                            $('.see-more-h2').show();
+                        }
+
+                        $('.r-result-group').html(rOut);
+                        $('.b-result-group').html(bOut);
+                        $('.results-area').fadeIn();
+                        $('.clear-button').fadeIn();
+                        $('#sample-under-input').fadeOut(function() {
+                            $('#actions-under-input').fadeIn();  
+                        });  
+
+                    })
+
+                    highlightInput();
+                    $('.search-input').blur();
+
+                    return false;
+                }
+            })
+
+            $('.clear-button').click(function() {
+                console.log('clear-button pressed');
+                $('.search-input').html('');   
+                $('.search-input').focus();
+
+                $('.results-area').fadeOut(); 
+                $('.clear-button').fadeOut();
+                $('#actions-under-input').fadeOut(function() {
+                    $('#sample-under-input').fadeIn();  
+                });  
+            })
+
+            $('#more-samples-a').popover({ trigger: 'hover' });
+            $('#more-samples-a2').popover({ trigger: 'hover' });
+        })
+
+        function highlightInput() {
+            var value = $('.search-input').html();
+            for (var c in Cities) {
+                var city = Cities[c];
+                if (value.toLowerCase().indexOf(city.toLowerCase()) > -1) {
+                    value = value.replace(new RegExp(city, 'gi'), '<b>' + city + '</b>');
+                }
+            }
+
+            var monthNames = ['January','February','March','April','May', 'June','July','August','September','October','November','December'];
+            for (var m in monthNames) {
+                var month = monthNames[m];
+                if (value.toLowerCase().indexOf(month.toLowerCase()) > -1) {
+                    value = value.replace(new RegExp(month, 'gi'), '<span class="time-hightlight">' + month + '</span>');
+                } else if (value.toLowerCase().indexOf(month.substring(0, 3).toLowerCase()) > -1)  {
+                    value = value.replace(new RegExp(month.substring(0, 3), 'gi'), '<span class="time-hightlight">' + month + '</span>');
+                }
+            }
+
+            $('.search-input').html(value);
+            
+            $('#plotResults').on('show', function () {
+                var value = $('.search-input').text();
+                $('#results-plot').remove();
+                $('#plotResults').find('.modal-body').append('<iframe id="results-plot" src="/chart?m=chart&q=' + encodeURI(value) + '" frameborder="0" style="width: 100%; height: 100%"></iframe>');
+                $('#detailed-chart-a').attr('href', '/scatterplot?m=chart-large&q=' + encodeURI(value))
+            })
+        }
+    </script>
+</head>
+<body>
+
+    <script id="result-template" type="text/x-handlebars-template">
+        <div class="result">
+            <img src="img/airlines/{{ airline }}}.png">
+
+            <span class="date">{{ date }}</span>
+            <div class="details">
+                04:00 EDI - 05:00 LON <br>
+                07:00 LON - 12:00 ATH
+            </div>
+
+            <a href="#myModal" data-toggle="modal" role="button" class="price">&pound; {{ price }}</a>
+        </div>
+    </script>
+
+    <script id="result-best-template" type="text/x-handlebars-template">
+        <div class="result result-best">
+            <img src="img/airlines/{{ airline }}}.png">
+
+            <span class="date">{{ date }}</span>
+            <div class="details">
+                04:00 EDI - 05:00 LON <br>
+                07:00 LON - 12:00 ATH
+            </div>
+
+            <a href="#myModal" data-toggle="modal" role="button" class="price">&pound; {{ price }}</a>
+        </div>
+    </script>
+
+    <div class="content">
+
+        <a href="/" class="logo">
+            <img src="img/plane.png">
+            easyscanner
+        </a>
+
+        <div class="input-area">
+            <div class="search-input" contenteditable="true"></div> 
+            <div class="clear-button">&times;</div> 
+            <div class="under-input" id="sample-under-input">Sample: <b>From Athens to Edinburgh in February</b> (<a id="more-samples-a" href="#" data-toggle="popover" data-placement="right" data-content="to Athens; From Tokyo; From Edinburgh in April" data-original-title="Sample Queries">more samples</a>)</div>              
+
+            <div class="under-input" id="actions-under-input">
+                <i class="icon-cog"></i> <a href="#advSearch" data-toggle="modal" role="button" >Advanced Search</a>
+                &nbsp;
+                &nbsp;
+                <i class="icon-align-right"></i> <a href="#plotResults" data-toggle="modal" role="button">Plot Results</a>
+                &nbsp;
+                &nbsp;
+                <i class="icon-question-sign"></i> <a id="more-samples-a2" href="#" data-toggle="popover" data-placement="right" data-content="to Athens; From Tokyo; From Edinburgh in April" data-original-title="Sample Queries">Sample Queries</a>
+            </div>      
+        </div>
+
+        <div class="results-area">
+            <h2 class="b-h2">Best Offers</h2>
+            <div class="results-group b-result-group">
+                
+            </div>
+            <h2 class="r-h2">Other Offers</h2>
+            <div class="results-group r-result-group">
+            </div>
+
+            <h2 class="see-more-h2"><a href="#">See All Results</a></h2>
+        </div>
+
+        <div class="loading-area">
+            <img src="img/loader.gif">
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="myModalLabel">Flight Details</h3>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                  <th>Origin</th>
+                  <th>Departure</th>
+                  <th>Destination</th>
+                  <th>Arrival</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b class="highlight"><i class="icon-plane"></i>  Mumbai (MBI)</b></td>
+                  <td>12:55</td>
+                  <td><b class="highlight">Singapore (ATH)</b></td>
+                  <td>22:20</td>
+                </tr>
+                <tr>
+                  <td><b class="highlight"><i class="icon-plane"></i> Singapore (ATH)</b></td>
+                  <td>05:30</td>
+                  <td><b class="highlight">Melbourne (MBR)</b></td>
+                  <td>22:20</td>
+                </tr>
+              </tbody>
+        </table>
+
+        <ul id="tabs" class="nav nav-tabs">
+          <li class="active"> <a href="#home" data-toggle="tab"><i class="icon-map-marker"></i> Map</a></li>
+          <li> <a href="#profile" data-toggle="tab"><i class="icon-qrcode"></i> QR Code</a></li>
+          <li> <a href="#booknow" data-toggle="tab"><i class="icon-ok"></i> Book for <b>&pound; 360.00</b></a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="home">
+             <div class="map-container">
+                <iframe width="425" height="180" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/maps?f=d&amp;source=s_d&amp;saddr=Mumbai,+Maharashtra,+India&amp;daddr=Melbourne,+Victoria,+Australia&amp;hl=en&amp;geocode=FZATIwEdWAZYBCnB7URmMMbnOzFpjGSNj-2kXQ%3BFaUAv_0d0PajCCn3TbrStUbWajGQzYwhdVYEBA&amp;aq=1&amp;oq=melb&amp;sll=-9.60044,109.235314&amp;sspn=62.961618,79.013672&amp;mra=ls&amp;ie=UTF8&amp;t=m&amp;ll=-9.795678,109.335938&amp;spn=79.529203,149.414063&amp;z=2&amp;output=embed"></iframe><br /><small><a href="https://maps.google.com/maps?f=d&amp;source=embed&amp;saddr=Mumbai,+Maharashtra,+India&amp;daddr=Melbourne,+Victoria,+Australia&amp;hl=en&amp;geocode=FZATIwEdWAZYBCnB7URmMMbnOzFpjGSNj-2kXQ%3BFaUAv_0d0PajCCn3TbrStUbWajGQzYwhdVYEBA&amp;aq=1&amp;oq=melb&amp;sll=-9.60044,109.235314&amp;sspn=62.961618,79.013672&amp;mra=ls&amp;ie=UTF8&amp;t=m&amp;ll=-9.795678,109.335938&amp;spn=79.529203,149.414063&amp;z=2" style="color:#0000FF;text-align:left">View Larger Map</a></small>
+            </div>
+          </div>
+          <div class="tab-pane" id="profile">
+            <div class="qr">
+                <img src="img/qr.png" style="max-width: 180px">
+            </div>
+          </div>          
+          <div class="tab-pane" id="booknow">
+            <div class="qr">
+             <button class="btn btn-info" data-dismiss="modal" aria-hidden="true">Book with eBookers <b>&pound; 360.00</b></button>
+             <br>
+             <br>
+             <button class="btn btn-info" data-dismiss="modal" aria-hidden="true">Book with eDreams <b>&pound; 389.00</b></button>
+             <br>
+             <br>
+             <button class="btn btn-info" data-dismiss="modal" aria-hidden="true">Book with lastminute.com <b>&pound; 453.00</b></button>
+            </div>
+          </div>
+        </div>
+
+       
+
+      </div>
+      <div class="modal-footer">
+        <img src="img/airlines/easyjet.png" class="pull-left">
+
+        <button class="btn" data-dismiss="modal" aria-hidden="true"><i class="icon-remove-circle"></i> Close</button>
+      </div>
+    </div>
+
+    <!-- Advanced Search -->
+    <div id="advSearch" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="advSearchLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="advSearchLabel">Advanced Search</h3>
+      </div>
+      <div class="modal-body" style="background: #34363E">
+        <img src="img/advsearch.png" alt="">
+       
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true"><i class="icon-remove-circle"></i> Close</button>
+        <button class="btn btn-info" data-dismiss="modal" aria-hidden="true"><i class="icon-white icon-ok"></i> Search</button>
+      </div>
+    </div>
+
+
+    <!-- Results Plot -->
+    <div id="plotResults" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="plotResultsLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="plotResultsLabel">Results Plot</h3>
+      </div>
+      <div class="modal-body">
+       
+        <iframe id="results-plot" src="chart" frameborder="0" style="width: 100%; height: 100%"></iframe>
+      </div>
+      <div class="modal-footer">
+        <a id="detailed-chart-a" target="_blank" href="/scatterplot" class="btn btn-info pull-left" aria-hidden="true"><i class="icon-fullscreen icon-white"></i> Detailed View</a>
+        <button class="btn" data-dismiss="modal" aria-hidden="true"><i class="icon-remove-circle"></i> Close</button>
+      </div>
+    </div>
+</body>
+</html>
