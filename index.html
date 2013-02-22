@@ -44,7 +44,6 @@
 
             $('.search-input').keydown(function(e) {
                 var value = $('.search-input').text();
-                console.log(e.keyCode, value.length)
                 if ((value.length < 2) && (e.keyCode == 8)) {
                     $('.clear-button').click();
                     return;
@@ -76,8 +75,15 @@
                             var context = {
                                 price: row[3],
                                 date: dateParts[2] + ' ' + dateParts[1],
-                                airline: row[4] 
-                            };
+                                airline: row[4],
+                                originCode: row[0].substring(0, 3).toUpperCase(),
+                                destinationCode: row[1].substring(0, 3).toUpperCase(),
+                                transit: Cities[Math.round(Math.random(70)) + 80].substring(0, 3).toUpperCase(),
+                                randTime1: (Math.round(Math.random(13)) + 10) + ':00',
+                                randTime2: (Math.round(Math.random(13)) + 10) + ':00',
+                                randTime3: (Math.round(Math.random(13)) + 10) + ':00',
+                                randTime4: (Math.round(Math.random(13)) + 10) + ':00'
+                            }
 
 
                             if (count > 1)
@@ -120,7 +126,6 @@
             })
 
             $('.clear-button').click(function() {
-                console.log('clear-button pressed');
                 $('.search-input').html('');   
                 $('.search-input').focus();
 
@@ -173,8 +178,8 @@
 
             <span class="date">{{ date }}</span>
             <div class="details">
-                04:00 EDI - 05:00 LON <br>
-                07:00 LON - 12:00 ATH
+                {{ randTime1 }} {{originCode}} - {{ randTime2 }} {{transit}} <br>
+                {{ randTime3 }} {{transit}} - {{ randTime4 }} {{destinationCode}}
             </div>
 
             <a href="#myModal" data-toggle="modal" role="button" class="price">&pound; {{ price }}</a>
@@ -187,8 +192,8 @@
 
             <span class="date">{{ date }}</span>
             <div class="details">
-                04:00 EDI - 05:00 LON <br>
-                07:00 LON - 12:00 ATH
+                {{ randTime1 }} {{originCode}} - {{ randTime2 }} {{transit}} <br>
+                {{ randTime3 }} {{transit}} - {{ randTime4 }} {{destinationCode}}
             </div>
 
             <a href="#myModal" data-toggle="modal" role="button" class="price">&pound; {{ price }}</a>
