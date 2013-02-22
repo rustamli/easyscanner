@@ -20,6 +20,10 @@ handlers:
 - url: /scatterplot
   static_files: scatterplot.html
   upload: scatterplot\.html  
+  
+- url: /pagination
+  static_files: pagination.html
+  upload: pagination\.html  
 
 - url: /css
   static_dir: css

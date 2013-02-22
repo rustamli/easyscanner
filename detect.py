@@ -2,8 +2,12 @@
 
 import re
 from xhelper import *
+import cky
 
 def process(QUERY):
+
+	if not cky.sub_process(QUERY):
+		return -1
 
 	q = QUERY.lower()
 	FILE_CITIES = "p_cities.csv"

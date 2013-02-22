@@ -140,6 +140,12 @@ body {
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#AAAAAA', endColorstr='#98d85f',GradientType=0 );
 }
 
+.small-price {
+    padding: 5px;
+    font-size: 13px;
+    text-decoration: none;
+} 
+
 .details {
     float: left;
     position: relative;

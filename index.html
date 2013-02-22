@@ -105,7 +105,9 @@
                         $('.see-more-h2').hide();
                         if (response.length > 2) {
                             $('.r-h2').show();
-                            $('.see-more-h2').show();
+                            if (response.length > 15) {
+                                $('.see-more-h2').show();
+                            }
                         }
 
                         $('.r-result-group').html(rOut);
@@ -166,6 +168,12 @@
                 $('#results-plot').remove();
                 $('#plotResults').find('.modal-body').append('<iframe id="results-plot" src="/chart?m=chart&q=' + encodeURI(value) + '" frameborder="0" style="width: 100%; height: 100%"></iframe>');
                 $('#detailed-chart-a').attr('href', '/scatterplot?m=chart-large&q=' + encodeURI(value))
+            })            
+
+
+            $('#paginationModal').on('show', function () {
+                $('#pagination-modal-body').find('iframe').remove();
+                $('#pagination-modal-body').append('<iframe src="/pagination" frameborder="0" style="width: 100%; height: 400px; overflow-x: hidden;"></iframe>');
             })
         }
     </script>
@@ -232,7 +240,7 @@
             <div class="results-group r-result-group">
             </div>
 
-            <h2 class="see-more-h2"><a href="#">See All Results</a></h2>
+            <h2 class="see-more-h2"><a href="#paginationModal" data-toggle="modal" role="button">See All Results</a></h2>
         </div>
 
         <div class="loading-area">
@@ -338,10 +346,28 @@
       </div>
       <div class="modal-body">
        
-        <iframe id="results-plot" src="chart" frameborder="0" style="width: 100%; height: 100%"></iframe>
+        <iframe id="results-plot" src="/chart" frameborder="0" style="width: 100%; height: 100%"></iframe>
       </div>
       <div class="modal-footer">
         <a id="detailed-chart-a" target="_blank" href="/scatterplot" class="btn btn-info pull-left" aria-hidden="true"><i class="icon-fullscreen icon-white"></i> Detailed View</a>
+        <button class="btn" data-dismiss="modal" aria-hidden="true"><i class="icon-remove-circle"></i> Close</button>
+      </div>
+    </div>
+
+
+    <!-- Paginated Results -->
+    <div id="paginationModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="ppaginationModalLabel" aria-hidden="true">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3 id="paginationModalLabel">All Results</h3>
+      </div>
+      <div class="modal-body" id="pagination-modal-body">
+       
+        <iframe frameborder="0" style="width: 100%; height: 400px; overflow-x: hidden;"></iframe>
+      </div>
+      <div class="modal-footer">
+        <a target="_blank" href="/pagination" class="btn btn-info pull-left" aria-hidden="true"><i class="icon-fullscreen icon-white"></i> Detailed View</a>
+        <a href="#" class="btn pull-left" aria-hidden="true"><i class=" icon-filter"></i> Filter Results</a>
         <button class="btn" data-dismiss="modal" aria-hidden="true"><i class="icon-remove-circle"></i> Close</button>
       </div>
     </div>
